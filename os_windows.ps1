@@ -147,6 +147,36 @@ Get-CimInstance win32_process | %{
     }
 }
 
+Present-Section "Windows Services" "Just check any nonstandard service not running a signed binary."
+$uninteristing_services = @('C:\windows\system32\svchost.exe -k netsvcs -p', 'C:\windows\system32\svchost.exe -k LocalSystemNetworkRestricted -p', 'C:\windows\system32\svchost.exe -k LocalServiceNetworkRestricted -p', 'C:\windows\system32\svchost.exe -k NetworkService -p', 'C:\windows\system32\svchost.exe -k LocalService -p', 'C:\windows\system32\svchost.exe -k DcomLaunch -p', 'C:\windows\System32\lsass.exe', 'C:\windows\system32\svchost.exe -k netsvcs', 'C:\windows\system32\svchost.exe -k LocalServiceNoNetwork -p', 'C:\windows\system32\svchost.exe -k LocalServiceNoNetworkFirewall -p', 'C:\windows\system32\svchost.exe -k RPCSS -p', 'C:\windows\system32\svchost.exe -k ICService -p', 'C:\windows\system32\svchost.exe -k wsappx -p', 'C:\windows\system32\msiexec.exe /V', 'C:\windows\System32\svchost.exe -k NetworkServiceAndNoImpersonation -p', 'C:\windows\System32\svchost.exe -k smbsvcs', 'C:\windows\system32\svchost.exe -k KpsSvcGroup', 'C:\windows\System32\svchost.exe -k AppReadiness -p', 'C:\windows\System32\svchost.exe -k utcsvc -p', 'C:\windows\system32\svchost.exe -k defragsvc', 'C:\windows\system32\svchost.exe -k appmodel -p', 'C:\windows\System32\svchost.exe -k swprv', 'C:\windows\System32\svchost.exe -k termsvcs', 'C:\windows\System32\svchost.exe -k WerSvcGroup', 'C:\windows\system32\svchost.exe -k LocalService', 'C:\windows\system32\svchost.exe -k wusvcs -p', 'C:\windows\system32\svchost.exe -k LocalServiceAndNoImpersonation', 'C:\windows\system32\svchost.exe -k LocalSystemNetworkRestricted', 'C:\windows\system32\svchost.exe -k NetworkServiceNetworkRestricted -p', 'C:\windows\System32\svchost.exe -k smphost')
+Get-CimInstance win32_service | Select-Object Name,Status,PathName,Caption,Description,DisplayName,ProcessId | %{
+    If($uninteristing_services -notcontains $_.PathName){
+        # get a path that isn't crazy, some paths start with double quotes, some have arguments
+        # split pathname based on the first character and parse from there
+        $array = $_.PathName.ToCharArray()
+        $target = $_.PathName
+        If($array[0] -eq '"'){
+            $target = $_.PathName.Split('"')[1]
+        }
+        Elseif($target -like "* *"){
+            $target = $_.PathName.Split(" ")[0]
+        }
+
+        # check the signature, if it's valid we can ignore it for now
+        $sig = Get-AuthenticodeSignature $target
+        If($sig.Status -ne "Valid"){
+            Write-Host "[*] This service is not a fingerprinted windows service" -ForegroundColor Green
+            Write-Host "[*] This service is not a Microsoft signed binary" -ForegroundColor Green
+            Write-Host "Name:"$_.Name
+            Write-Host "PathName:"$_.PathName
+            Write-Host "Caption:"$_.Caption
+            Write-Host "Description:"$_.Description
+            Write-Host "DisplayName:"$_.DisplayName
+            Write-Host "Process ID (PID):"$_.ProcessId
+            Write-Host "---------------------------------"
+        }
+    }
+}
 
 Present-Section "Local Users" "Listing all of the local users."
 Write-Host "Remember, a RID is just the number after the last dash.`n"
@@ -154,11 +184,11 @@ Get-LocalUser | Select Name,Sid,Fullname,Enabled
 
 
 Function Check-Sequential($num){
+    $sequential = $true
     If($num -eq 0){
-        Return $False
+        $sequential = $false
     }
     $start = $null
-    $sequential = $true
     $num.ToString().ToCharArray() | %{
         If($start -eq $null){
             $start = [int]$_
@@ -173,12 +203,12 @@ Function Check-Sequential($num){
     $sequential
 }
 Function Check-Repeating($num){
+    $repeating = $true
     If($num -eq 0){
-        Return $False
+        $repeating = $false
     }
 
     $start = $null
-    $repeating = $true
     $num.ToString().ToCharArray() | %{
         If($start -eq $null){
             $start = [int]$_
@@ -230,8 +260,8 @@ Get-NetTCPConnection | ForEach{
     }
 }
 
-If($port_count){
+If($port_count -eq 0){
     Write-Host "Nothing of note."
 }
 
-
+Write-Host "$port_count"
