@@ -254,7 +254,58 @@ elif SUDO_LS:
         print("No crontabs found for other users.")
 
 ######################################################################################################################################
+# check the linux profiles, convention should have an author listed in the file
+header("Checking /etc/profile.d/ persistence", "Check all files in /etc/profile.d that does not specify an author.")
+if ROOT_PRIVS:
+    files = os.listdir('/etc/profile.d/')
+    for f in files:
+        fstream = open(os.path.join("/etc/profile.d/", f))
+        data = fstream.read()
+        fstream.close()
+        if 'author' not in data.lower() and 'license' not in data.lower():
+            print("No author/license specified for "+os.path.join("/etc/profile.d/", f)+", this is worth looking at.")
+            print("Script content:")
+            for line in data.split("\n"):
+                if len(line) > 0 and line[0] != '#':
+                    print(line.strip())
+            print("------------------------------------------------------")
 
+else:
+    print("No root privileges, manually check /etc/profile.d/ for bash script persistence.")
+
+######################################################################################################################################
+# check all of the .bash_profile and .bashrc for each user
+header("Checking .bashrc and .bash_profile", "Check all users .bashrc and .bash_profile for persistence.")
+if ROOT_PRIVS:
+    print("This section counts all lines for all users in linux profiles.  Look at each section, and")
+    print("See if any of the numbers toward the top look weird (low numbers are weird, 1 is super weird)")
+    for file in ['.bashrc', '.bash_profile', '.profile']:
+        print(yellow("\n\nChecking for weird commands in each user's "+file+" file."))
+        command = "cat /home/*/"+file+" | sort | uniq -c | sort -n | head"
+        os.system(command)
+
+else:
+    print("No root privileges, manually check /home/<username>/.bashrc files for persistence.")
+
+######################################################################################################################################
+# /etc/init.d/* should specify an author
+header("Checking /etc/init.d/ persistence", "Check all files in /etc/init.d that does not specify an author.")
+if ROOT_PRIVS:
+    files = os.listdir('/etc/init.d/')
+    for f in files:
+        fstream = open(os.path.join("/etc/init.d/", f))
+        data = fstream.read()
+        fstream.close()
+        if 'author' not in data.lower() and 'BEGIN INIT INFO' not in data:
+            print("No author specified for "+os.path.join("/etc/init.d/", f)+", this is worth looking at.")
+            print("Script content:")
+            for line in data.split("\n"):
+                if len(line) > 0 and line[0] != '#':
+                    print(line.strip())
+            print("------------------------------------------------------")
+
+else:
+    print("No root privileges, manually check /etc/init.d/ for bash script persistence.")
 
 
 
