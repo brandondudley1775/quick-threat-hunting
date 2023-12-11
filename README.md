@@ -1,3 +1,27 @@
+# Banner grab a port with pure python
+```
+example@example:~$ python
+Python 2.7.16 (default, Oct 10 2019, 22:02:15)
+[GCC 8.3.0] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import socket
+>>> s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+>>> # Example of closed port
+>>> s.connect(('1.1.1.1', 1234))
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/usr/lib/python2.7/socket.py", line 228, in meth
+    return getattr(self._sock,name)(*args)
+socket.error: [Errno 111] Connection refused
+>>> # Example of open port
+>>> s.connect(('1.1.1.1', 2345))
+>>> data = s.recv(128)
+>>> s.close()
+>>> data
+'The quick brown fox jumps over the lazy dog.'
+>>>
+```
+
 # tcpdump and exclude non-printable strings
 `tcpdump -i any port 23 -A -w /dev/stdout | strings`
 
