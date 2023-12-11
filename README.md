@@ -1,3 +1,8 @@
+# Usage
+1. Download the `ssh_scan.py` file to the first host in your enumeration chain.
+2. Run the script with the following syntax: `python3 ssh_scan.py`
+3. Follow the prompts, you basically can point this at any SSH port and it will enumerate up to two hops out.
+
 # Banner grab a port with pure python
 ```
 python -c "import socket; target_ip = raw_input('Enter the target IP address >>>');port = int(raw_input('Enter the target port >>>'));s = socket.socket(socket.AF_INET, socket.SOCK_STREAM);s.connect((target_ip, port));data = s.recv(128);s.close();print(data)"
