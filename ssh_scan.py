@@ -190,10 +190,12 @@ def expand_cidr(net):
         for b in range(start_octets[1], stop_octets[1]+1):
             for c in range(start_octets[2], stop_octets[2]+1):
                 for d in range(start_octets[3], stop_octets[3]+1):
+                    if str(a)+"."+str(b)+"."+str(c)+"."+str(d)+"/" in net:
+                        continue
                     if d == 0 or d== 255:
                         continue
                     ips.append(str(a)+"."+str(b)+"."+str(c)+"."+str(d))
-    return ips
+    return ips[:-1]
 
 def scan_network(ip_range):
     results = {}
@@ -358,8 +360,13 @@ def main():
     print(yellow("\n[INFO] Step 4: Port Scan Interface Networks"))
     scan_outputs = []
     for n in new_networks:
-        print(yellow("[INFO]Performing host discovery for "+n.strip()))
-        b64 = bytes_to_s(one_liner_ssh_scan(n.strip(), all_ports=False))
+        print(yellow("[INFO] Performing host discovery for "+n.strip()))
+        print(yellow("[INFO] Entering y below will slow down the scan to ~90 seconds per host."))
+        choice = input("Do you want to scan all ports? enter 'n' to only scan 21,22,23,80 >>>")
+        if 'y' in choice:
+            b64 = bytes_to_s(one_liner_ssh_scan(n.strip(), all_ports=True))
+        else:
+            b64 = bytes_to_s(one_liner_ssh_scan(n.strip(), all_ports=False))
         command = "'echo "+b64+" | base64 --decode | sh'"
         status, result, stderr = run_ssh_command(ip, port, username, password, command)
         if status:
